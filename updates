@@ -1,0 +1,6 @@
+#!/bin/bash
+
+#SYN Flooding attack :
+tshark -r temp.pcap -T fields -e ip.src -e ip.dst -e ip.proto -e frame.time_delta_displayed tcp.flags.syn == 1 > list 
+cat list | awk '{print $1}' | uniq -c | sort -bgr
+#./detective
