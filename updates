@@ -7,33 +7,62 @@ echo "0" > flag
 temp=$1
 
 #SYN Flooding attack :
-tshark -r temp -T fields -e ip.src -e ip.dst -e ip.proto -e frame.time_delta_displayed tcp.flags.syn == 1 > list 
+tshark -r $temp -T fields -e ip.src -e ip.dst -e ip.proto -e frame.time_delta_displayed tcp.flags.syn == 1 > list 
 cat list | awk '{print $1}' | uniq -c | sort -bgr > syn_list
-if [ $(cat syn_list | awk '{print $1}')  -gt $syn_count ] 
- then 
-  echo $(cat syn_list | awk '{print $2}') >> O_blist 
-  echo "1" > flag
+if [ -s syn_list ]
+	then 
+     li=syn_list
+     while IFS= read -r count
+       do
+       	echo "$count" > val
+       	var=$(awk '{print $1}' val)
+		 if [ $var -gt $syn_count ] 
+		  then 
+		   echo $(cat syn_list | awk '{print $2}') >> O_blist 
+		   echo "1" > flag
+		 fi
+		 rm val
+     done < "$li"
 fi
+
 
 #Ping of Death attack detection :
-tshark -r temp -T fields -e ip.src -e ip.dst -e ip.proto -e frame.time_delta_displayed > list1 
-#block the source 
+tshark -r $temp -T fields -e ip.src -e ip.dst -e ip.proto -e frame.time_delta_displayed > list1 
 
 #Nodes sending and receiving larger  :
-tshark -r temp -T fields -e ip.src -e ip.dst -e ip.proto -e frame.len==243 > heavy 
+tshark -r $temp -T fields -e ip.src -e ip.dst -e ip.proto -e frame.len > heavy 
 
-# Check if it's outgoing traffic : BOTNET
-cat heavy | awk '{print $1}' | uniq -c | sort -bgr > bot_list
-if [ $(cat bot_list | awk '{print $1}')  -gt $thr ] 
- then 
-  echo $(cat bot_list | awk '{print $2}') >> I_blist 
-  echo "1" > flag
-fi
+if [ -s heavy ] 
+  then 
 
-# Check if it's incoming traffic : DOS 
-cat heavy | awk '{print $2}' | uniq -c | sort -bgr > dos_list
-if [ $(cat dos_list | awk '{print $1}')  -gt $thr ] 
- then 
-  echo $(cat dos_list | awk '{print $2}') >> I_blist 
-  echo "1" > flag
+	# Check if it's outgoing traffic : BOTNET
+		cat heavy | awk '{print $1}' | uniq -c | sort -bgr > bot_list
+		li=bot_list
+	     while IFS= read -r count
+	       do
+	       	echo "$count" > val
+	       	var=$(awk '{print $1}' val)
+				if [ $var  -gt $thr ] 
+				 then 
+				  echo $(cat bot_list | awk '{print $2}') >> I_blist 
+				  echo "1" > flag
+				fi
+		    rm val
+	     done < "$li"
+
+
+	# Check if it's incoming traffic : DOS 
+		cat heavy | awk '{print $2}' | uniq -c | sort -bgr > dos_list
+		li=dos_list
+	     while IFS= read -r count
+	       do
+	       	echo "$count" > val
+	       	var=$(awk '{print $1}' val)
+				if [ $var  -gt $thr ] 
+				 then 
+				  echo $(cat dos_list | awk '{print $2}') >> I_blist 
+				  echo "1" > flag
+				fi
+		    rm val
+	     done < "$li"
 fi
