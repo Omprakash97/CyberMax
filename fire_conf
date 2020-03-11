@@ -1,0 +1,16 @@
+#!/bin/bash
+
+# DEFAULT SYSTEM CONFIGURATION :
+sudo ufw enable 
+sudo ufw logging on
+
+# GET CURRENT TIME STAMP :
+curr_dt=`date +"%Y-%m-%d-%H-%M-%S"`
+log_file=`basename $0 sh`$curr_dt.log
+stat_file=`basename $0 sh`$curr_dt
+
+# Creating a log file 
+cp /var/log/ufw.log  $log_file
+
+# creating a status file :
+sudo ufw status numbered > $stat_file
