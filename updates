@@ -1,6 +1,38 @@
 #!/bin/bash
 
+# import specs :
+syn_count=200
+thr=300
+echo "0" > flag
+
 #SYN Flooding attack :
 tshark -r temp.pcap -T fields -e ip.src -e ip.dst -e ip.proto -e frame.time_delta_displayed tcp.flags.syn == 1 > list 
-cat list | awk '{print $1}' | uniq -c | sort -bgr
-#./detective
+cat list | awk '{print $1}' | uniq -c | sort -bgr > syn_list
+if [ $(cat syn_list | awk '{print $1}')  -gt $syn_count ] 
+ then 
+  echo $(cat syn_list | awk '{print $2}') >> O_blist 
+  echo "1" > flag
+fi
+
+#Ping of Death attack detection :
+tshark -r temp.pcap -T fields -e ip.src -e ip.dst -e ip.proto -e frame.time_delta_displayed > list1 
+#block the source 
+
+#Nodes sending and receiving larger  :
+tshark -r temp.pcap -T fields -e ip.src -e ip.dst -e ip.proto -e frame.len==243 > heavy 
+
+# Check if it's outgoing traffic : BOTNET
+cat heavy | awk '{print $1}' | uniq -c | sort -bgr > bot_list
+if [ $(cat bot_list | awk '{print $1}')  -gt $thr ] 
+ then 
+  echo $(cat bot_list | awk '{print $2}') >> I_blist 
+  echo "1" > flag
+fi
+
+# Check if it's incoming traffic : DOS 
+cat heavy | awk '{print $2}' | uniq -c | sort -bgr > dos_list
+if [ $(cat dos_list | awk '{print $1}')  -gt $thr ] 
+ then 
+  echo $(cat dos_list | awk '{print $2}') >> I_blist 
+  echo "1" > flag
+fi
