@@ -4,6 +4,69 @@
 sudo ufw enable 
 sudo ufw logging on
 
+# Allowinf some default ports :
+sudo ufw allow 22
+sudo ufw allow 443
+sudo ufw allow 22
+
+# Limiting access to SSH : 
+sudo ufw limit ssh
+
+
+################################ Rate limiting Configuration - Done in configuration ##############################
+
+# ### Start HTTP ###
+
+# # Enter rule
+# -A ufw-before-input -p tcp --dport 80   -j ufw-http
+# -A ufw-before-input -p tcp --dport 443  -j ufw-http
+
+# # Limit connections per Class C
+# -A ufw-http -p tcp --syn -m connlimit --connlimit-above 50 --connlimit-mask 24 -j ufw-http-logdrop
+
+# # Limit connections per IP
+# -A ufw-http -m state --state NEW -m recent --name conn_per_ip --set
+# -A ufw-http -m state --state NEW -m recent --name conn_per_ip --update --seconds 10 --hitcount 20 -j ufw-http-logdrop
+
+# # Limit packets per IP
+# -A ufw-http -m recent --name pack_per_ip --set
+# -A ufw-http -m recent --name pack_per_ip --update --seconds 1  --hitcount 20  -j ufw-http-logdrop
+
+# # Finally accept
+# -A ufw-http -j ACCEPT
+
+# # Log-A ufw-http-logdrop -m limit --limit 3/min --limit-burst 10 -j LOG --log-prefix "[UFW HTTP DROP] "
+# -A ufw-http-logdrop -j DROP
+
+# ### End HTTP ###
+
+#################################################################################################################################
+
+
+############################## HANDLING THE SPECIFICATION MODEL RESULTS ############################################################
+
+# Oblack=$(cat O_blist)
+# Iblack=$(cat I_blist)
+
+# BLOCLING INCOMING TARFFIC 
+Oin=O_blist
+while IFS= read -r line
+do
+  sudo ufw deny from $line to any
+done < "$Oin"
+
+# BLOCKING OUTGOING TRAFFIC 
+Iin=I_blist
+while IFS= read -r line
+do
+  sudo ufw deny from $line to any
+done < "$Iin"
+
+
+####################################################################################################################################
+
+######## UPDATE THE CURRENT STATUS ################
+
 # GET CURRENT TIME STAMP :
 curr_dt=`date +"%Y-%m-%d-%H-%M-%S"`
 log_file=`basename $0 sh`$curr_dt.log
@@ -14,3 +77,5 @@ cp /var/log/ufw.log  $log_file
 
 # creating a status file :
 sudo ufw status numbered > $stat_file
+
+######################################################
